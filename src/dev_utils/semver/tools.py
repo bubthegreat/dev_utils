@@ -6,7 +6,7 @@ import toml
 import base64
 import json
 import difflib
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 class ASTVersionInspector:
@@ -107,7 +107,7 @@ class ASTVersionInspector:
         diff = list(difflib.unified_diff(old_lines, new_lines, lineterm=""))
         return "\n".join(diff)
     
-    def detect_changes(self, old_signatures: Dict[str, Dict], new_signatures: Dict[str, Dict]) -> (str, List[str]):
+    def detect_changes(self, old_signatures: Dict[str, Dict], new_signatures: Dict[str, Dict]) -> Tuple[str, List[str]]:
         """Detects changes and determines the required version increment."""
         major, minor, patch = 0, 0, 0
         changes = []
@@ -128,6 +128,10 @@ class ASTVersionInspector:
                 if key not in new_api:
                     major += 1  # Removed function or class
                     changes.append(f"Major: Removed {key} from {file}")
+
+        if not major or minor:
+            patch += 1
+            changes.append(f"Patch: No Major or Minor changes detected.")
         
         return self.increment_version(major, minor, patch), changes
 
@@ -146,10 +150,8 @@ class ASTVersionInspector:
         """Runs the version analysis and updates pyproject.toml."""
         old_api = self.api_signatures.copy()
         self.scan_package()
-        
-        if old_api != self.api_signatures:
-            new_version, changes = self.detect_changes(old_api, self.api_signatures)
-            print(f"Updating version: {self.current_version} -> {new_version}")
-            self.save_version(new_version, changes)
-        else:
-            print("No changes detected in the public API.")
+        new_version, changes = self.detect_changes(old_api, self.api_signatures)
+        print(new_version)
+
+        print(f"Updating version: {self.current_version} -> {new_version}")
+        self.save_version(new_version, changes)

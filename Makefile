@@ -1,5 +1,8 @@
 ruff: 
 	uv run ruff check --fix src/
 
-semver:
+check:
 	uv run semverer check src/
+
+update:
+	uv run semverer update src/
